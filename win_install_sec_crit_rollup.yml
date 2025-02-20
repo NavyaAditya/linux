@@ -1,0 +1,47 @@
+---
+#**************************************************************
+# Script Name: win_install_sec_crit_rollup.yml
+# Description: Use this playbook to install critical updates
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+# Ansible playbook to run Windows Update and restart, if required
+- name:  Windows Update
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Set windows update
+      win_shell: |
+        Stop-Service -Name wuauserv
+        Remove-Item 'HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate' -Recurse
+        Start-Service -Name wuauserv
+    - name: Set windows update location
+      win_shell: |
+        $WindowsUpdateRegKey = "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU"
+        $WSUSServer          = "https://10.1.60.66:5830"
+        $StatServer          = "https://10.1.60.66:5830"
+        $Enabled             = 1
+        if(-not (Test-Path $WindowsUpdateRegKey))
+        {
+           New-Item -Path $WindowsUpdateRegKey -Force
+        }
+        Set-ItemProperty -Path $WindowsUpdateRegKey -Name UseWUServer -Value $Enabled -Type DWord
+        Set-ItemProperty -Path $WindowsUpdateRegKey -Name WUServer -Value $WSUSServer -Type String
+        Set-ItemProperty -Path $WindowsUpdateRegKey -Name WUStatusServer -Value $StatServer -Type String
+        Restart-Service wuauserv -Force
+
+    - name: Running Windows Update
+      win_updates:
+        category_names: ['SecurityUpdates','CriticalUpdates']
+        #category_names: ['SecurityUpdates']
+      register: result
+
+    # output results
+    - debug: var=result
+
+    # reboot only if required
+    - win_reboot:
+      when: result.reboot_required
+
+    
+ 

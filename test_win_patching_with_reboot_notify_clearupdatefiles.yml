@@ -16,6 +16,7 @@
 
   tasks:
     - debug: msg="The value of machineip in dns is {{ machineip }}"
+
     - name: If machineip has a value then start working
       block:
         - setup:
@@ -65,12 +66,26 @@
                 ansible_reboot_pending == True 
           ignore_errors: yes
 
+        - block:
+            - name: Stop windows update service
+              win_service:
+                name: wuauserv
+                state: stopped
+            - name: Remove old Windows Update files
+              win_shell: |
+                Remove-Item C:\Windows\SoftwareDistribution\Download\* -Force -Recurse -ErrorAction SilentlyContinue
+            - name: Start Windows Update service
+              win_service:
+                name: wuauserv
+                state: started
+            - name: Start Windows Update
+              win_shell: |
+                Start-WUScan -SearchCriteria "IsInstalled=0 AND IsHidden=0 AND IsAssibned=1"   
+
         - name: Running Windows Update
           win_updates:
             category_names: ['SecurityUpdates','CriticalUpdates','UpdateRollups', 'Updates', 'DefinitionUpdates']
           register: result
-          async: 45
-          poll: 05
         - debug: var=result
 
         # reboot only if required
@@ -83,3 +98,7 @@
       # when: machineip|length > 0
       when: machineip|regex_search("(([0-9](?!\d)|[1-9][0-9](?!\d)|1[0-9]{2}(?!\d)|2[0-4][0-9](?!\d)|25[0-5](?!\d))[.]?){4}")
         
+          
+            
+        
+

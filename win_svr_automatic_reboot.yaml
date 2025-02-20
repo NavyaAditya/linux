@@ -1,0 +1,21 @@
+---
+#**************************************************************
+# Script Name: template.yml
+# Description: Use this template when developing scripts
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+# Ansible playbook to run Windows Update and restart, if required
+#
+
+
+- name:  Windows Update
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Running Windows Update
+      win_updates:
+        category_names: ['SecurityUpdates','CriticalUpdates','UpdateRollups', 'Updates', 'DefinitionUpdates']
+        register: update_results
+        reboot: yes
+        winreboot_reboot_behavior: if_required 

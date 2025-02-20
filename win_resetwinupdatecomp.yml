@@ -1,0 +1,24 @@
+---
+#**************************************************************
+# Script Name: win_resetwinupdatecomp.yml
+# Description: Resets windows update components
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+
+- name:  Resetting Windows Update Components
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Copy winupdate reset batch file to local system
+      win_shell: Copy-Item '\\corporate.datacard.com\NETLOGON\ResetWindowsUpdate.bat' C:\Scripts\  -Force
+     
+    - name: Resetting windows update components
+      win_command: C:\Scripts\ResetWindowsUpdate.bat
+      register: result
+
+    # output results
+    - debug: var=result
+
+    - name: Remove the winupdate reset batch file
+      win_shell: Remove-Item  C:\Scripts\ResetWindowsUpdate.bat  -Force

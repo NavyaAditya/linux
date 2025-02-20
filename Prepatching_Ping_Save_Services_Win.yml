@@ -1,0 +1,22 @@
+---
+#**************************************************************
+
+# Script Name: template.yml
+
+# Description: Use this template when developing scripts
+
+# Author: ElstonC
+
+# Organization: Harman
+
+#**************************************************************
+- name: collect facts about windows system services
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Ping all servers
+      win_ping:
+      register: Ping_result
+    - name: Get info for all installed services
+      win_shell: |
+        Get-Service | fl > C:\services.txt

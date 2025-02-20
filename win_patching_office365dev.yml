@@ -1,0 +1,124 @@
+---
+#**************************************************************
+# Script Name: win_patching_office365.yml
+# Description: Updates office 365
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+# Ansible playbook to install office365 updates and restart, if required
+# This will also display the popup countdown message similar to SCCM if a reboot is required
+
+# cd to the  %TEMP% directory
+# create a /bak directory if it doesnt exist
+# Move all files in the following format to the /bak directory <machinename>-*.log
+# Delete old files 
+# Run the get current version powershell 
+# Start the update 
+# Wait for the  <machinename>-*.log file to exist in  %TEMP% 
+# Get contents of the file 
+# Get updated version of office.
+# Patch location \\netapp1\groups\IT\O365Updates
+
+- name: Insatll Office365 update  
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Move old log files in the temp directory
+      block:
+        - name: Get system variables
+          setup:
+          register: allvars
+        - debug: var=allvars.ansible_facts.ansible_env.TEMP
+        - name: Ensure the backup folder exist in temp
+          win_file: 
+            path: '{{allvars.ansible_facts.ansible_env.TEMP}}\bak\'
+            state: directory
+        - name: Get list of files in the temp dir
+          win_find:
+            paths: '{{allvars.ansible_facts.ansible_env.TEMP}}'
+            patterns: '{{ansible_hostname}}-*.log'
+          register: filesinfo
+        - name: Copy files to backup  
+          win_copy: 
+            src: "{{ item['path'] }}"
+            dest: '{{allvars.ansible_facts.ansible_env.TEMP}}\bak\\'
+            remote_src: yes
+          with_items: "{{ filesinfo['files'] }}"
+        - debug: 
+            msg: "{{ item['filename'] }}"
+          with_items: "{{ filesinfo['files'] }}"
+        - name: Remove files from the temp directory
+          win_file: 
+            path: "{{ item['path'] }}"
+            state: absent
+          with_items: "{{ filesinfo['files'] }}"
+
+
+    - name: Get current version of O365 that is installed
+      win_shell: |
+        $curver=Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\O365ProPlusRetail* | Select-Object  DisplayVersion -Unique
+        write-host "Current Office version is: $curver "
+      register: result
+    - debug: var=result
+    
+    - name: Start office update
+      win_command: OfficeC2RClient.exe /update user displaylevel=false forceappshutdown=false updatetoversion=16.0.13426.20332
+      #win_command: OfficeC2RClient.exe /update user displaylevel=true forceappshutdown=false
+      args:
+       chdir: C:\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\
+      register: exeresults
+    - debug: var=exeresults
+
+    - name: Wait for upgrade to finish 
+      win_shell: |
+        $d=(Get-Date).AddSeconds(-30)
+        $p=Get-Process | Where-Object {($_.Name -eq 'OfficeClickToRun') -and ($_.StartTime -gt ($d))} 
+        Wait-Process -Id $p.id 
+        while (!(Test-Path "$env:TEMP\$env:COMPUTERNAME-*.log")) { Start-Sleep 10 }
+        $logfile=Get-ChildItem -Path $env:TEMP -Filter "$env:COMPUTERNAME-*.log"
+        $logfile.name
+      register: logfile
+    # - debug: var=logfile.stdout
+
+    # Will need to add code to read the log file to get the details
+    - name: Get updated version of O365 that is installed
+      win_shell: |
+        $curver=Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\O365ProPlusRetail* | Select-Object  DisplayVersion -Unique
+        write-host "New Office version is: $curver "
+        write-host "*******************************************************************"
+        cat {{allvars.ansible_facts.ansible_env.TEMP}}\{{logfile.stdout}}
+      register: result
+      failed_when: "'\"Activity.Success\": false' in result.stdout"
+    - debug: var=result  
+
+    # - debug: msg={{ lookup('file','{{allvars.ansible_facts.ansible_env.TEMP}}\{{logfile.stdout}}') | replace('\r\n', '') }}   
+
+          # win_shell: |
+          #   $filesexist= Test-Path -Path '{{allvars.ansible_facts.ansible_env.TEMP}}\{{ansible_hostname}}-*.log'
+          #   $fileexists
+          #   if ($fileexists)
+          #   {
+          #     Move-Item '{{allvars.ansible_facts.ansible_env.TEMP}}\{{ansible_hostname}}-*.log' '{{allvars.ansible_facts.ansible_env.TEMP}}\bak' 
+          #   }
+          
+      
+    # - name: Get Current Office Version
+    
+
+    # - name: Start office update
+    #   win_command: OfficeC2RClient.exe /update user displaylevel=false forceappshutdown=true updatetoversion=16.0.13426.20332
+    #   args:
+    #    chdir: C:\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\
+    #   register: exeresults
+    # - debug: var=exeresults
+
+    # - name: Wait for logfile before continuing
+    #   win_wait_for:
+    #     path: '{{ansible_env.TEMP}}\{{ansible_hostname}}-*.log'
+
+    # - name: Get update office version
+    #   win_shell: |
+    #     $curver=Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\O365ProPlusRetail* | Select-Object  DisplayVersion -Unique
+    #     write-host "Current Office version is: $curver "
+    #   register: resultend
+    # - debug: var=resultend

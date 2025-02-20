@@ -1,0 +1,46 @@
+---
+#**************************************************************
+# Script Name: win_patching_office365.yml
+# Description: Updates office 365
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+# Ansible playbook to install office365 updates and restart, if required
+# This will also display the popup countdown message similar to SCCM if a reboot is required
+
+# cd to the  %TEMP% directory
+# create a /old directory if it doesnt exist
+# Move all files in the following format to the /old directory <machinename>-*.log
+# Run the get current version powershell 
+# Start the update 
+# Wait for the  <machinename>-*.log file to exist in  %TEMP% 
+# Get contents of the file 
+# Get updated version of office.
+
+
+- name: Insatll Office365 update  
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Get Current Office Version
+      win_shell: |
+        $curver=Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\O365ProPlusRetail* | Select-Object  DisplayVersion -Unique
+        write-host "Current Office version is: $curver "
+     
+      register: result
+    - debug: var=result
+
+    - name: Start office update
+      win_command: OfficeC2RClient.exe /update user displaylevel=false forceappshutdown=false
+      args:
+       chdir: C:\\Program Files\\Common Files\\Microsoft Shared\\ClickToRun\\
+      register: exeresults
+    - debug: var=exeresults
+
+    - name: Get update office version
+      win_shell: |
+        $curver=Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\O365ProPlusRetail* | Select-Object  DisplayVersion -Unique
+        write-host "Current Office version is: $curver "
+      register: resultend
+    - debug: var=resultend
+

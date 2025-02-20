@@ -1,0 +1,36 @@
+---
+#**************************************************************
+# Script Name: template.yml
+# Description: Use this template when developing scripts
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+# Ansible playbook to run Windows Update and restart, if required
+
+- name:  Windows Update
+  hosts: all
+  gather_facts: false
+  tasks:
+
+    - name: Set windows update
+      win_shell: |
+        Stop-Service -Name wuauserv
+        Remove-Item 'HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate' -Recurse
+        Start-Service -Name wuauserv
+        
+
+    - name: Running Windows Update
+      win_updates:
+        category_names: ['SecurityUpdates','CriticalUpdates','UpdateRollups', 'Updates', 'DefinitionUpdates']
+        #category_names: ['SecurityUpdates']
+      register: result
+
+    # output results
+    - debug: var=result
+
+    # reboot only if required
+    - name: Create schedule using the powershell script
+      win_shell: |
+        Copy-Item '\\10.1.60.62\public\rebootedc'C:\ProgramData\awx\ -Recurse -Force
+        C:\ProgramData\awx\rebootedc\reboot.ps1
+      when: result.reboot_required

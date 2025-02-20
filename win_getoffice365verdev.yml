@@ -1,0 +1,22 @@
+---
+#**************************************************************
+# Script Name: win_getoffice365verdev.yml
+# Description: Get the installed version of office for reporting
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+
+- name: Get Insatlled Office365 version  
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Get current version of O365 that is installed
+      win_shell: |
+        $curver=Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\O365ProPlusRetail* | Select-Object  DisplayVersion -Unique
+        write-host "The installed Office version is: $curver "
+      register: result
+    - debug: var=result
+    
+ 
+
+  

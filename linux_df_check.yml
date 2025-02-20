@@ -1,0 +1,15 @@
+---
+#********************************************************************************
+# Script Name: df_check.yml
+# Description: Use this playbook to perform a disk free command
+# Author: ElstonC
+# Organization: Harman
+#********************************************************************************
+
+- name: Get hosts space details
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Run df command.
+      shell:
+        cmd: df

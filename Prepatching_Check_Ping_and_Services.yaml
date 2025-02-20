@@ -1,0 +1,17 @@
+---
+- name: collect facts about system services
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Ping all servers
+      ping:
+      register: Ping_result
+    - name: Check running services
+      service_facts:
+      register: services_facts
+    - debug:
+        var: ansible_facts.services
+    - copy:
+        content: "{{ ansible_facts.services }}"
+        dest: "/tmp/{{ ansible_hostname}}_runningservices"
