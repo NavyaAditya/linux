@@ -1,0 +1,14 @@
+---
+# This playbook to run sepm-api-batchmove.ps1 on one of Windows system
+
+- name: Move SEPM client out from USB-exception group
+  hosts: all 
+  gather_facts: false
+  vars:
+          ansible_winrm_server_cert_validation: ignore
+  tasks:
+   - name: Batch script to move computer to USB  
+     win_shell: |
+             C:\scripts\sep\SEPM-API-BatchMove-USBException.ps1
+             C:\scripts\sep\SEPM-API-BatchMove-Default.ps1
+

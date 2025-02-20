@@ -1,0 +1,20 @@
+---
+#**************************************************************
+# Script Name: win_patching_getmsreport.yml
+# Description: This will pull the patching report off machines
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+
+- name:  Windows update endpoint checkin
+  hosts: all
+  gather_facts: false
+  tasks:
+    # Get the report file by using powershell Read file then remove it
+    - name: Get Report file
+      win_shell: |
+        if (Test-Path 'C:\ProgramData\AWX\msreportstatus.log' ) {Get-Content 'C:\ProgramData\AWX\msreportstatus.log'}
+        if (Test-Path 'C:\ProgramData\AWX\msreportstatus.log' ) { Remove-Item 'C:\ProgramData\AWX\msreportstatus.log' -Force}
+      register: result
+      failed_when: "'Failed' in result.stdout"
+      

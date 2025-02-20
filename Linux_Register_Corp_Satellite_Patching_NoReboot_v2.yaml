@@ -1,0 +1,44 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to perform 'yum update' on selected hosts.
+#        NOTE: This playbook will also reboot hosts if kernel is updated.
+#------------------------------------------------------------------------------
+#**************************************************************
+# Script Name: Yum_update_reboot.yml
+# Description: Use this playbook  to run Yumupdate and reboot if kernel is updated
+# Author: Sairohit Dasa
+# Organization: Harman
+# Revised: Louie Liu, 10/3/2022
+#
+#**************************************************************
+- name: Yumupdate and noreboot playbook
+  become_user: root
+  become: true
+  hosts: all
+  ignore_errors: yes
+
+  tasks:
+  ############################################################
+  #  This task will update all latest patches                #
+  ############################################################
+     - name: Remove python qpid proton package if exists.
+       yum:
+        name: python-qpid-proton
+        state: absent
+     - name: upgrade all packages
+       shell: yum -y update --exclude=kmod*,kernel*
+       async: 300
+       poll: 30
+       register: patch_status
+# ##########################################################
+#  This task will append a file with patch status          #
+############################################################
+     - name: Log Patch update status
+       lineinfile:
+        line: "{{ansible_host}} - {{patch_status.changed}} - {{patch_status.stdout_lines}}"
+        path: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes
+
+     - name: Show the patching results
+       debug:
+         var: patch_status.stdout_lines

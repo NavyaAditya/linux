@@ -1,0 +1,25 @@
+---
+#**************************************************************
+
+# Script Name: ssh_public_key_onboarding.yml
+
+# Description: This script will run the script to add Ansible public key to VMs
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Add Ansible Public key
+  hosts: all
+  gather_facts: false
+  become_user: root
+  become: true
+  vars: 
+    ansible_remote_tmp: /tmp
+  tasks:
+   - name: Add Ansible Public key
+     shell: bash -c "$(curl -fsSL https://binary.entrust.com:8443/artifactory/infra-tools/sshAddKeyV2.sh)"
+     check_mode: no
+     async: 3600
+     poll: 90

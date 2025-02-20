@@ -1,0 +1,18 @@
+---
+#**************************************************************
+# Script Name: win_reboot.yml
+# Description: Runs a basic ansible win_reboot against a windows host
+# Author: Louie Liu
+# Organization: Entrust IT Sec Engineering
+#**************************************************************
+# 
+#
+# https://docs.ansible.com/ansible/2.5/modules/win_reboot_module.html
+
+- name: Unconditionally reboot the machine with all defaults
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Start win_reboot
+      win_reboot:
+

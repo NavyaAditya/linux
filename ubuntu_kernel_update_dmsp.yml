@@ -1,0 +1,48 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to install the latest kernel version on Ubuntu VMs.
+#        
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: ubuntu_kernel_update_dmps.yml
+
+# Description: Use this playbook  to install latest kernel update in Ubuntu VMs
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Apply updates for Ubuntu VMs
+  become_user: root
+  become: true
+  hosts: all
+  gather_facts: false
+  tasks:
+   - name: enable kernel update
+     shell: |
+       apt-mark unhold linux-generic linux-libc-dev linux-headers-generic linux-image-generic
+     register: results
+   - name: fetch new updates
+     shell: apt update  
+     register: available_updates
+     async: 10800
+     poll: 300
+   - name: Install available updates
+     shell: apt upgrade -y
+     register: kernel_update_output
+     failed_when: "'Newest' in kernel_update_output.stdout"
+     async: 10800
+     poll: 300
+   - name: Print applied patch details
+     debug:
+      var: patching_status
+  
+  ##########################################################
+  # This will compare previous kernel with updated kernel  
+  ##########################################################
+   - name: Reboot the VM.
+     shell: shutdown -r now "Reboot required for updated kernel"
+     async: 0
+     poll: 0
+     ignore_errors: true

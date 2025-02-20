@@ -1,0 +1,21 @@
+---
+# This playbook is for Defender software installation on Windows hosts
+# Author : Raghu Sundaram
+- name: Install Windows Defender
+  hosts: all
+  gather_facts: false
+
+  tasks:
+      - name: Create folder
+        win_command: powershell.exe New-Item -ItemType "directory" -Path "c:\temp\WIN_DMSP_MDE"
+      - name: Copy Defender client
+        win_get_url:
+          url: https://binary.entrust.com:8443/artifactory/edc-infosec-local/Defender/Win_DMSP_MDE/MDEOnboarding.cmd
+          dest: C:\Temp\WIN_DMSP_MDE\MDEOnboarding.cmd
+      - name: Copy Defender script
+        win_get_url:
+          url: https://binary.entrust.com:8443/artifactory/edc-infosec-local/Defender/Win_DMSP_MDE/WIN_DMSP_MDE.ps1 
+          dest: C:\Temp\WIN_DMSP_MDE\WIN_DMSP_MDE.ps1
+      - name: Install Microsoft Defender on windows machines
+        win_command: powershell.exe -ExecutionPolicy ByPass -File C:\Temp\WIN_DMSP_MDE\WIN_DMSP_MDE.ps1
+        register: results

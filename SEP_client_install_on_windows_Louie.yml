@@ -1,0 +1,17 @@
+---
+# This playbook tests software installation on Windows hosts
+
+- name: Install SEP client
+  hosts: all 
+  gather_facts: false
+  tasks:
+      - name: Copy SEP client
+        win_copy:
+          src: \\netapp1\shared\IBD\Symantec\14.3_RU1\MSI_for_Louie\My Company_Production_Servers_WIN64BIT\Symantec Endpoint Protection version 14.3.3384.1000 - English
+          dest: C:\
+          remote_src: yes
+
+      - name: Install SEP client on windows machines
+        win_package:
+          path: C:\Symantec Endpoint Protection version 14.3.3384.1000 - English\Sep64.msi
+          state: present

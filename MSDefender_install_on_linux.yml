@@ -1,0 +1,29 @@
+---
+# This playbook is for Defender software installation on Linux VMs
+# Author : Raghu Sundaram
+- name: Install Microsoft Defender in Linux
+  hosts: all
+  gather_facts: false
+
+  tasks:
+      - name: Create MDE folder /opt/
+        shell: sudo mkdir -p /opt/MDE
+      - name: Copy files
+        shell: | 
+          cd /opt/MDE
+          sudo wget https://binary.entrust.com:8443/ui/native/edc-infosec-local/Defender/Linux_DMSP_MDE/install.sh
+          sudo wget https://binary.entrust.com:8443/ui/native/edc-infosec-local/Defender/Linux_DMSP_MDE/Linux_DMSP_MDE.sh
+          sudo wget https://binary.entrust.com:8443/ui/native/edc-infosec-local/Defender/Linux_DMSP_MDE/mdatp_managed.json
+      - name: Uninstall Symantec Endpoint
+        shell: sudo sh /opt/MDE/install.sh -u
+        register: uninstall_status
+        async: 600
+        poll: 60 
+      - name: Install Microsoft Defender
+        shell: sh /opt/MDE/Linux_DMSP_MDE.sh
+        register: output
+        async: 600
+        poll: 60
+      - name: Show installation status
+        debug:
+          var: output.stdout_lines

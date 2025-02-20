@@ -1,0 +1,45 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to perform 'yum update' on selected hosts.
+#        NOTE: This playbook will also reboot hosts if kernel is updated.
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: Linux_OMSP_Kernel_Patching_and_NoReboot.yaml
+
+# Description: Use this playbook  to run Yumupdate and reboot if kernel is updated
+
+# Author: Raghu Sundaram
+# Organization: Harman
+
+#**************************************************************
+- name: Yumupdate and reboot playbook
+  strategy: free
+  become_user: root
+  become: true
+  hosts: all
+  gather_facts: true
+  tasks:
+
+  ###########################################################
+  #  This task will install the lastest kernel if available  #
+  ##########################################################
+    - name: Remove python qpid proton package if exists.
+      yum:
+        name: python-qpid-proton
+        state: absent
+    - name: upgrade kernel packages
+      shell: yum -y install kernel
+      register: kernel_update_output
+      failed_when: "'Nothing' in kernel_update_output.stdout"
+      async: 300
+      poll: 90
+            
+# ##########################################################
+#  This task will append a file with patch status          #
+############################################################
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{kernel_update_output.changed}} - {{kernel_update_output.stdout_lines}}"
+        path: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes

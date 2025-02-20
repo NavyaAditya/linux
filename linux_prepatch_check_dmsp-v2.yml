@@ -1,0 +1,70 @@
+---
+#**************************************************************
+
+# Script Name: linux_prepatch_check-v2.yml
+
+# Description: This script will check for Redhat Subscription status and package dependency issues
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Identify the OSes from the inventory
+  hosts: all
+  tasks:
+    - name: Categorize VMs depending on their OS distribution
+      group_by:
+        key: os_{{ ansible_facts['distribution'] }}
+- name: Play check for patching feasibility in RH based VMs
+  hosts: os_CentOS:os_Redhat
+  strategy: free
+  gather_facts: true
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+    - name: Use subscription manager to check subscription status.
+      shell: subscription-manager status
+      ignore_errors: true
+      register: subscription_status
+      check_mode: no
+    - name: Check for all available updates.
+      yum: 
+       name: '*'
+       state: latest
+       update_cache: yes
+       update_only: yes
+      check_mode: yes
+      register: yum_update_status
+- name: Play check for Kernel update availabililty in ODIA VMs
+  hosts: os_CentOS:os_Redhat
+  strategy: free
+  gather_facts: true
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks:       
+    - name: Check for Kernel updates.
+      yum: 
+       name: 'kernel'
+       state: latest
+       update_cache: yes
+       update_only: yes
+      check_mode: yes
+      register: yum_kernel_update_status      
+- name: Play check for patching feasibility in Ubuntu based VMs
+  hosts: os_Ubuntu
+  strategy: free
+  gather_facts: true
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+    - name: Check for all available updates in Ubuntu VMs.
+      apt: 
+       name: '*'
+       state: latest
+       update_cache: yes
+       only_upgrade: yes
+      register: apt_update_status
+      check_mode: yes

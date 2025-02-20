@@ -1,0 +1,92 @@
+---
+# This playbook is to check for updates in both RHEL and Ubuntu VMs.
+# playbook name: check_for_updates.yml
+# Author: Raghu Sundaram
+# Organization: Harman
+- name: Check for updates in RHEL based VMs
+  hosts: rhel
+  become_user: root
+  become: true
+  gather_facts: no
+  tasks:
+   - name: Use subscription manager to check subscription status.
+     shell: subscription-manager status
+     ignore_errors: true
+     register: subscription_status
+     check_mode: no
+   - name: Salt repo fix
+     shell: bash -c "$(curl -fsSL 10.1.60.242:80/updateSaltRepo.sh)"
+     check_mode: no
+   - name: Check /boot freespace
+     shell: df /tmp --output\=avail | tail -1
+     register: boot_freespace
+     check_mode: no  
+   - name: Check for Kernel updates in RH based VMs
+     yum: 
+       name: 'kernel'
+       state: latest
+       update_cache: yes
+       update_only: yes
+     ignore_errors: true       
+     register: kernel_updates
+     check_mode: true
+     when: boot_freespace.stdout|float is gt 80000     
+   - name: Check for updates on RH based VMs
+     yum: 
+       name: '*'
+       state: latest
+       update_cache: yes
+       update_only: yes
+     ignore_errors: true
+     check_mode: true
+- name: Check for updates in Ubuntu based VMs
+  hosts: ubuntu
+  become_user: root
+  become: true
+  gather_facts: no
+  ignore_errors: true
+  tasks:
+   - name: Salt repo fix
+     shell: bash -c "$(curl -fsSL 10.1.60.242:80/updateSaltRepo.sh)"        
+     check_mode: no
+   - name: Enable kernel updates in Ubuntu VMs 
+     dpkg_selections:
+      name: "{{ item }}"
+      selection: install
+     loop:
+      - linux-generic
+      - linux-libc-dev 
+      - linux-headers-generic 
+      - linux-image-generic 
+      - linux-firmware
+     check_mode: false
+   - name: Check /boot freespace
+     shell: df /tmp --output\=avail | tail -1
+     register: boot_freespace
+     check_mode: no
+   - name: Update APT cache
+     apt: 
+       update_cache: yes
+       force_apt_get: true
+     ignore_errors: true
+   - name: Check for Kernel updates in Ubuntu based VMs
+     apt:
+       name: 'linux-generic'
+       state: latest
+       update_cache: no
+       only_upgrade: yes
+       force_apt_get: true
+       allow_change_held_packages: true
+     ignore_errors: true       
+     when: boot_freespace.stdout|float is gt 80000  
+     register: kernel_updates_ubuntu     
+     check_mode: yes
+   - name: check for updates in Ubuntu VMs
+     apt:
+       name: '*'
+       state: latest
+       update_cache: no
+       only_upgrade: yes
+       force_apt_get: true  
+     ignore_errors: true
+     check_mode: true

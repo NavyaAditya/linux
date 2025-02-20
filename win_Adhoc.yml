@@ -1,0 +1,12 @@
+- name: get entrust win servers information
+  hosts: entrust_servers
+  remote_user: "{{ ansible_user }}"
+  vars:
+     ansible_become_pass: "{{ ansible_password }}"
+  tasks:
+   - name: executingwin patching  commands
+     win_shell: Get-HotFix |sort InstalledOn -Descending
+     become: true
+     register: is_cmd_executed
+   - debug:
+       var: is_cmd_executed.stdout_lines

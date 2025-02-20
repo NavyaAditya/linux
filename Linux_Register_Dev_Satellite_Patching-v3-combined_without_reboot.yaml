@@ -1,0 +1,118 @@
+---
+# This playbook is to check for updates in both RHEL and Ubuntu VMs.
+# playbook name: Linux_Register_Dev_Satellite_Patching-v3.yaml
+# Author: Raghu Sundaram
+# Organization: Harman
+
+- name: Install updates in RedHat based VMs
+  hosts: rhel
+  become_user: root
+  become: true
+  gather_facts: false
+  vars: 
+    ansible_remote_tmp: /tmp
+  ignore_errors: true
+  tasks:
+    - name: Refresh RedHat Satellite Content Views in the VM.
+      shell: |
+        yum clean all 
+        subscription-manager refresh
+        yum makecache
+    - name: Salt repo fix
+      shell: bash -c "$(curl -fsSL 10.1.60.242:80/updateSaltRepo.sh)"        
+      check_mode: no        
+    - name: Check /boot freespace
+      shell: df /boot --output\=avail | tail -1
+      register: boot_freespace
+    - name: Install kernel updates
+      yum: 
+       name: 'kernel'
+       state: latest
+       update_cache: yes
+       update_only: yes
+      when: boot_freespace.stdout|float is gt 80000
+      register: kernel_update_rhel_status
+      async: 3600
+      poll: 90
+    - name: Install regular updates on RH based VMs
+      yum: 
+       name: '*'
+       state: latest
+       update_cache: yes
+       update_only: yes
+       exclude: salt*       
+      register: regular_updates_rhel_status
+      async: 3600
+      poll: 90              
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{regular_updates_rhel_status.changed}} - {{regular_updates_rhel_status.msg}}"
+        path: /tmp/patch_status.log
+        create: yes
+
+- name: Install updates in Ubuntu based VMs
+  hosts: ubuntu
+  become_user: root
+  become: true
+  gather_facts: false
+  ignore_errors: true
+  vars:
+      ansible_remote_tmp: /tmp
+      salt_packages:
+      - salt-master
+      - salt-minion
+      ubuntu_kernel_packages:
+      - linux-generic
+      - linux-headers-generic
+      - linux-headers-generic-pae
+      - linux-image-generic
+      - linux-image-generic-pae
+  tasks:
+    - name: Check /boot freespace
+      shell: df /boot --output\=avail | tail -1
+      register: boot_freespace
+    - name: Salt repo fix
+      shell: bash -c "$(curl -fsSL 10.1.60.242:80/updateSaltRepo.sh)"        
+      check_mode: no        
+    - name: Enable kernel updates in Ubuntu VMs
+      dpkg_selections:
+       name: "{{ item }}"
+       selection: install
+      loop: "{{ ubuntu_kernel_packages }}"
+      async: 3600
+      poll: 90
+    - name: Update APT cache
+      apt: 
+       update_cache: yes
+       force_apt_get: true
+      ignore_errors: true
+    - name: Install Kernel updates in Ubuntu VMs.
+      apt: 
+       name: 'linux-generic'
+       state: latest
+       update_cache: no
+       only_upgrade: yes
+       force_apt_get: true       
+       allow_change_held_packages: true
+      ignore_errors: true       
+      when: boot_freespace.stdout|float is gt 80000       
+      register: kernel_update_ubuntu_status
+    - name: Exclude salt packages from update
+      dpkg_selections:
+       name: "{{ item }}"
+       selection: hold
+      loop: "{{ salt_packages }}"      
+    - name: Install regular updates in Ubuntu VMs
+      apt:
+       name: '*'
+       state: latest
+       force_apt_get: true
+       update_cache: no
+       only_upgrade: yes
+      ignore_errors: true
+      register: ubuntu_update
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ubuntu_update.changed}} - {{ubuntu_update.stdout_lines}}"
+        path: /tmp/patch_status.log
+        create: yes

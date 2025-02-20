@@ -1,0 +1,27 @@
+---
+#*****************************************************************************
+# Script Name: win_wsus_reg.yml
+# Description: Use this playbook to install windows patches and not reboot
+# Author: ElstonC
+# Organization: Harman
+#****************************************************************************
+
+
+- name:  Windows WSUS Register
+  hosts: all
+  gather_facts: false
+  vars:
+    machineip: "{{ lookup('dig', inventory_hostname ) }}"
+
+  tasks:
+    - debug: msg="The value of machineip in dns is {{ machineip }}"
+
+    - name: Running wuauctl
+      win_shell: (New-Object -ComObject Microsoft.Update.AutoUpdate).DetectNow()
+      async: 300
+      poll: 10
+      register: result
+
+    # output results
+    - debug: var=result
+

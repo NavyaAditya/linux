@@ -1,0 +1,133 @@
+---
+# This playbook is to check for updates in both RHEL and Ubuntu VMs.
+# playbook name: check_for_updates.yml
+# Author: Raghu Sundaram
+# Organization: Harman
+
+- name: Install kernel updates
+  hosts: kernel_update:kernel_update_reboot
+  become_user: root
+  become: true
+  gather_facts: true
+  ignore_errors: true
+  tasks: 
+    - name: Lock OS version for RHEL
+      shell: subscription-manager release --set=8
+      when: ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "8"      
+    - name: Install kernel updates
+      yum: 
+       name: 'kernel'
+       state: latest
+       update_cache: yes
+       update_only: yes
+      when: ansible_os_family == "RedHat"
+      register: kernel_update_rhel_status
+    - name: Log Patch update status for Kernel updates
+      lineinfile:
+        line: "{{ansible_host}} - {{kernel_update_rhel_status.changed}} - {{kernel_update_rhel_status.msg}}"
+        path: /tmp/kernel_update_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes
+      when: ansible_os_family == "RedHat"
+
+    - name: Enable kernel updates in Ubuntu VMs 
+      dpkg_selections:
+       name: "{{ item }}"
+       selection: install
+      loop:
+      - linux-generic
+      - linux-libc-dev 
+      - linux-headers-generic 
+      - linux-image-generic 
+      - linux-firmware
+      check_mode: false  
+      when: ansible_os_family == "Debian"
+    - name: Install Kernel updates in Ubuntu VMs.
+      apt: 
+       name: 'linux-generic'
+       state: latest
+       update_cache: yes
+       only_upgrade: yes
+       allow_change_held_packages: true
+      when: ansible_os_family == "Debian" 
+      register: kernel_update_ubuntu_status  
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{kernel_update_ubuntu_status.changed}} - {{kernel_update_ubuntu_status.stdout_lines}}"
+        path: /tmp/kernel_update_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes
+      when: ansible_os_family == "Debian"
+
+- name: Install regular updates
+  hosts: all
+  become_user: root
+  become: true
+  gather_facts: true
+  ignore_errors: true
+  tasks:
+    - name: Remove python qpid proton if exists
+      yum: 
+        name: 'python-qpid-proton'
+        state: absent
+      when: ansible_os_family == "RedHat"    
+    - name: Disable PostgreSQL repositories in YUM.
+      yum: 
+       disablerepo: pgdg-common, pgdg*
+      when: ansible_os_family == "RedHat"    
+    - name: Lock OS version for RHEL
+      shell: subscription-manager release --set=8
+      when: ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "8"      
+      check_mode: no  
+    - name: Install regular updates on RH based VMs
+      yum: 
+       name: '*'
+       state: latest
+       update_cache: yes
+       update_only: yes
+       exclude: kmod*,kernel*
+      register: regular_updates_rhel_status
+      when: ansible_os_family == "RedHat"
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{regular_updates_rhel_status.changed}} - {{regular_updates_rhel_status.msg}}"
+        path: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes
+      when: ansible_os_family == "RedHat"
+
+    - name: Disable kernel updates in Ubuntu VMs 
+      dpkg_selections:
+       name: "{{ item }}"
+       selection: hold
+      loop:
+      - linux-generic
+      - linux-libc-dev 
+      - linux-headers-generic 
+      - linux-image-generic 
+      - linux-firmware
+      check_mode: false  
+      when: ansible_os_family == "Debian"
+    - name: Install regular updates in Ubuntu VMs
+      apt:
+       name: '*'
+       state: latest
+       update_cache: yes
+       only_upgrade: yes
+      when: ansible_os_family == "Debian"
+      register: ubuntu_update
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{ubuntu_update.changed}} - {{ubuntu_update.stdout_lines}}"
+        path: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes
+      when: ansible_os_family == "Debian"
+
+- name: Reboot VMs
+  hosts: kernel_update_reboot
+  become_user: root
+  become: true
+  gather_facts: false
+  ignore_errors: true
+  tasks: 
+    - name: Reboot when packages were updated
+      reboot: 
+        msg: "Reboot required for updated kernel"
+        post_reboot_delay: 60

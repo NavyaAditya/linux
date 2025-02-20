@@ -1,0 +1,25 @@
+---
+#**************************************************************
+
+# Script Name: linux_prepatch_check.yml
+
+# Description: This script will check for Redhat Subscription status and package dependency issues
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Play check for patching feasibility in RH based VMs
+  hosts: all
+  strategy: free
+  gather_facts: true
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+  - name: Start ping
+    ping:
+  - name: Distribution
+    debug: msg="{{ ansible_distribution }}"
+  - name: Distribution version
+    debug: msg="{{ ansible_distribution_version}}" 

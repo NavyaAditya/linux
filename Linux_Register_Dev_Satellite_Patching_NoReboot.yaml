@@ -1,0 +1,53 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to perform 'yum update' on selected hosts.
+#        NOTE: This playbook will also reboot hosts if kernel is updated.
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: Yum_update_reboot.yml
+
+# Description: Use this playbook  to run Yumupdate and reboot if kernel is updated
+# Revised by Raghu Sundaram 19/11/2023 - Disabling Redhat Subscription status validation due to the implementation of Simple Content Access
+# Revisd by Raghu Sundaram 24/11/2023 - This playbook is only for non-kernel updates
+
+# Author: Sairohit Dasa
+
+# Organization: Harman
+
+#**************************************************************
+- name: Yumupdate and noreboot playbook
+  become_user: root
+  become: true
+  hosts: all
+  strategy: free
+  gather_facts: true
+  tasks:
+ 
+  ###########################################################
+    #  This task will install all latest updates except kernel              #
+  ##########################################################
+    - name: Remove python qpid proton package if exists.
+      yum:
+        name: python-qpid-proton
+        state: absent
+    - name: upgrade all packages
+     # shell: yum -y update --exclude=kmod*,kernel*
+      shell: yum -y update
+      async: 300
+      poll: 30
+      register: patch_status
+
+# ##########################################################
+#  This task will append a file with patch status          #
+############################################################
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{patch_status.changed}} - {{patch_status.stdout_lines}}"
+        path: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.txt
+        create: yes
+    - name: Copy the patch log to awx
+      fetch:
+         src: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.txt
+         dest: /tmp/
+         flat: yes

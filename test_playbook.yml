@@ -1,0 +1,25 @@
+---
+#**************************************************************
+
+# Script Name: test_playbook.yml
+
+# Description: This playbook was created to explore new strategies in Ansible/AWX
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Check package on rhel based VMs
+  hosts: rhel
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+############################################################################################################
+# This will check for most recent patching activity  #
+############################################################################################################
+
+    - name: Check for cups-browsed service status 
+      shell: systemctl status cups-browsed

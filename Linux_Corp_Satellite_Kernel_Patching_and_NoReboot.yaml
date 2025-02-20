@@ -1,0 +1,59 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to perform 'yum update' on selected hosts.
+#        NOTE: This playbook will also reboot hosts if kernel is updated.
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: Linux_Corp_Satellite_Kernel_Patching_and_NoReboot.yaml
+
+# Description: Use this playbook  to run Yumupdate and reboot if kernel is updated
+
+# Author: Raghu Sundaram
+# Revised by Louie Liu 1/13/2022 - Encrypted svc_awxpatch password and poined to new registry shell
+# Revised by Raghu Sundaram 29/10/2023 - Removed hard coded password and inherit the same from AWX and disabled gather_facts
+# Revised by Raghu Sundaram 19/11/2023 - Disabling Redhat Subscription status validation due to the implementation of Simple Content Access
+# Revisd by Raghu Sundaram 24/11/2023 - Use this playbook only for kernel update
+# Revisd by Raghu Sundaram 24/11/2023 - Only keep two kernel versions at any point of time.
+# Revisd by Raghu Sundaram 24/11/2023 - Fail the task if kernel update not available
+# Revisd by Raghu Sundaram 24/11/2023 - VM won't be rebooted if kernel update is not available
+# Organization: Harman
+
+#**************************************************************
+- name: Yumupdate and reboot playbook
+  strategy: free
+  become_user: root
+  become: true
+  hosts: all
+  gather_facts: true
+  tasks:
+
+  ###########################################################
+  #  This task will install the lastest kernel if available  #
+  ##########################################################
+
+    - name: Remove python qpid proton package if exists.
+      yum:
+        name: python-qpid-proton
+        state: absent
+      register: yum_utils_state
+    - name: Set maximum installed kernel versions to 2
+      shell: yum-config-manager --setopt=installonly_limit=2 --save
+      register: package_cleanup_status
+      async: 300
+      poll: 60 
+    - name: upgrade kernel packages
+      shell: yum -y update
+      register: kernel_update_output
+      failed_when: "'Nothing' in kernel_update_output.stdout"
+      async: 10800
+      poll: 300
+            
+# ##########################################################
+#  This task will append a file with patch status          #
+############################################################
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{kernel_update_output.changed}} - {{kernel_update_output.stdout_lines}}"
+        path: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes

@@ -1,0 +1,48 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to install the updates on Ubuntu VMs.
+#        
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: ubuntu_patching_dmsp_no_reboot.yml
+
+# Description: Use this playbook to install latest update in Ubuntu VMs without VM Reboot
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Apply updates for Ubuntu VMs
+  become_user: root
+  become: true
+  hosts: all
+  gather_facts: false
+  tasks:
+   - name: disable kernel update
+     shell: |
+       apt-mark hold linux-generic linux-libc-dev linux-headers-generic linux-image-generic linux-firmware
+     register: results
+   - name: fetch new updates
+     shell: apt update  
+     register: available_updates
+     async: 600
+     poll: 60
+   - name: Install available updates
+     shell: apt upgrade -y
+     register: update_output
+     async: 600
+     poll: 60
+
+###########################################################
+#  This task will append a file with patch status          #
+############################################################
+   - name: Log Patch update status
+     lineinfile:
+        line: "{{ansible_host}} - {{kernel_update_output.changed}} - {{kernel_update_output.msg}}"
+        path: /tmp/kernel_update_status.txt
+        create: yes
+
+   - name: Print applied patch details
+     debug:
+      var: patching_status

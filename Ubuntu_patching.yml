@@ -1,0 +1,46 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to perform 'unattended-upgrade' on Ubuntu hosts.
+#        
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: Ubuntu_patching_dmps.yml
+
+# Description: Use this playbook  to install latest kernel update in Ubuntu VMs
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Apply updates for Ubuntu VMs
+  become_user: root
+  become: true
+  hosts: all
+  gather_facts: true
+#  ignore_errors: yes
+  tasks:
+   - name: disable kernel update
+     shell: |
+       apt-mark hold linux-generic linux-libc-dev linux-headers-generic linux-image-generic linux-firmware
+     register: results  
+   - name: fetch new updates
+     shell: apt update  
+     register: available_updates
+   - name: Install available updates
+     shell: apt upgrade -y
+     async: 10800
+     poll: 300
+     register: patching_status
+
+# ##########################################################
+#  This task will append a file with patch status          #
+############################################################
+   - name: Log Patch update status
+     lineinfile:
+        line: "{{ansible_host}} - {{patching_status.changed}} - {{patching_status.stdout_lines}}"
+        path: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.txt
+        create: yes
+   - name: Print applied patch details
+     debug:
+      var: patching_status

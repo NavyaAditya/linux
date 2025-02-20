@@ -1,0 +1,39 @@
+---
+  - name: Playbook for VM
+    hosts: all
+    strategy: free
+    gather_facts: false
+    become_user: root
+    become: true
+    
+    tasks:
+       - name: Check kernel version
+         shell: uname -a
+         register: kernel_version
+#      - name: Use shell module to chk for available. security updates excluding kernel updates
+#        shell:
+#         cmd: yum updateinfo list sec --exclude=kernel* | tail -n +7
+
+#        register: secupdwokernel
+      
+#      - name: Show the available security updates excluding kernel updates.
+#        debug: var=secupdwokernel.stdout_lines
+       - name: Show the kernel version
+         debug:
+          var: kernel_version.stdout_lines
+
+       - name: Check current uptime
+         shell: uptime
+         register: uptime
+      
+       - name: Show last reboot time for the VMs 
+         debug: var=uptime.stdout_lines
+ 
+#    - name: Show the kernel updates  
+ #       shell: 
+ #        cmd: yum -y update kernel --setopt tsflags=test| grep kernel
+
+ #       register: updkernel
+
+#      - name: O/P of Kernel updates for VM   
+#        debug: var=updkernel.stdout_lines

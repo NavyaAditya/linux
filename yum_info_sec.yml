@@ -1,0 +1,25 @@
+---
+#**************************************************************
+# Script Name: yum_sec_info.yml
+# Description: Runs yum info-sec to generate security errata related information
+# Author: Raghu Sundaram
+# Organization: Harman
+#**************************************************************
+# 
+#
+
+- name: Run yum info-sec
+  hosts: all  
+  strategy: free
+  gather_facts: false
+  ignore_errors: true
+  tasks:
+    - name: Refresh subscription-manager
+      shell: |
+        yum clean all 
+        subscription-manager refresh
+        yum makecache
+    - name: Run yum info-sec
+      shell: yum info-sec
+      register: report
+    - debug: var=report

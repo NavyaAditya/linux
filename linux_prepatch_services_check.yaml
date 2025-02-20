@@ -1,0 +1,35 @@
+---
+#**************************************************************
+
+# Script Name: template.yml
+
+# Description: Use this template when developing scripts
+
+# Author: Sairohit Dasa
+
+# Organization: Harman
+
+#**************************************************************
+- name: Play to service state
+  hosts: 10.1.194.210
+  become: true
+  user: eve
+  tasks:
+
+    - name: ping servers and check the status 
+      ping:
+      register: ping_result
+ 
+    - name: find the file
+      stat:
+        path: "/tmp/{{ansible_hostname}}-services"
+      register: result
+
+    - name: remove the file if exists
+      shell: rm -rf "/tmp/{{ansible_hostname}}-services"
+      when: result.stat.exists == true
+
+    - name: check sevices stauts
+      shell:  systemctl --type=service --state=running | head -n-6 >> "/tmp/{{ansible_hostname}}-services"
+
+

@@ -1,0 +1,22 @@
+---
+#**************************************************************
+# Script Name: ubuntu-version-check.yml
+# Description: Runs a simple command against a linux host to gather the Linux distribution details
+# Author: Raghu Sundaram
+# Organization: Harman
+#**************************************************************
+# 
+#
+# https://docs.ansible.com/ansible/2.5/modules/ping_module.html
+
+
+- name: version check
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: run command and store the result
+      shell: lsb_release -a
+      register: os_version
+    - name: Show the OS name and os version  
+      debug: 
+       var: os_version

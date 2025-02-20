@@ -1,0 +1,67 @@
+---
+#**************************************************************
+
+# Script Name: patch_history.yml
+
+# Description: This script will check for most recent patching activity in Redhat based VMs
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Run yum history
+  hosts: all
+  strategy: free
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+
+############################################################################################################
+# This will check for most recent kernel update  #
+############################################################################################################
+    - name: Check for Oracle Linux
+      stat:
+        path: /etc/oracle-release
+      register: oracle_linux
+      async: 300
+      poll: 60 
+    - name: run yum history for RHEL VMs
+      shell: |
+        yum check-update kernel
+        yum history kernel | head -n 4
+      register: kernel_patching_rhel_status
+      async: 300
+      poll: 60 
+    - name: print the results
+      debug:
+        var: kernel_patching_rhel_status
+    - name: run yum history for Oracle Linux VMs
+      shell: |
+        yum check-update kernel
+        yum history kernel-uek | head -n 4
+      register: kernel_patching_oracle_status
+      when: oracle_linux.stat.exists      
+      async: 300
+      poll: 60 
+    - name: print the results
+      debug:
+        var: kernel_patching_oracle_status
+      when: oracle_linux.stat.exists        
+############################################################################################################
+# This will check for most recent patching activity  #
+############################################################################################################
+
+    - name: run yum history
+      shell: yum history last
+      register: patching_status
+      tags: regular
+      async: 300
+      poll: 60 
+
+    - name: print the results
+      debug:
+        var: patching_status.stdout_lines
+      tags: log

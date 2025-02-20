@@ -1,0 +1,29 @@
+---
+#*****************************************************************************
+# Script Name: win_patching_no_reboot.yml
+# Description: Use this playbook to install windows patches and not reboot
+# Author: ElstonC
+# Organization: Harman
+#****************************************************************************
+# Ansible playbook to run Windows Update and not reboot even if a reboot is required
+#
+
+- name:  Windows Update No Reboot
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Running Windows Update
+      win_updates:
+        category_names: ['SecurityUpdates','CriticalUpdates','UpdateRollups', 'Updates', 'DefinitionUpdates']
+        #category_names: ['SecurityUpdates']
+      register: result
+      async: 3600
+      poll: 60
+      retries: 10
+      delay: 30
+      until: result is not failed
+    - debug: var=result
+
+
+
+

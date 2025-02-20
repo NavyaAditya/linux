@@ -1,0 +1,69 @@
+---
+#**************************************************************
+
+# Script Name: linux_prepatch_check-v2.yml
+
+# Description: This script will check for Redhat Subscription status and package dependency issues
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Play check for patching feasibility in RH based VMs
+  hosts: rhel
+  strategy: free
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+    - name: Use subscription manager to check subscription status.
+      shell: subscription-manager status
+      ignore_errors: true
+      register: subscription_status
+      check_mode: no
+    - name: Remove python qpid proton if exists
+      yum: 
+        name: 'python-qpid-proton'
+        state: absent
+    - name: Disable PostgreSQL repositories in YUM.
+      yum: 
+       disablerepo: pgdg-common, pgdg*    
+    - name: Install the updates
+      yum: 
+       name: '*'
+       state: latest
+       update_cache: yes
+       update_only: yes
+      register: yum_update_status
+# ##########################################################
+#  This task will append a file with patch status          #
+############################################################
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{yum_update_status.changed}} - {{yum_update_status.stdout_lines}}"
+        path: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes
+- name: Play check for patching feasibility in Ubuntu based VMs
+  hosts: ubuntu
+  strategy: free
+  gather_facts: true
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+    - name: Check for all available updates in Ubuntu VMs.
+      apt: 
+       name: '*'
+       state: latest
+       update_cache: yes
+       only_upgrade: yes
+      register: apt_update_status
+# ##########################################################
+#  This task will append a file with patch status          #
+############################################################
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{apt_update_status.changed}} - {{apt_update_status.stdout_lines}}"
+        path: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes

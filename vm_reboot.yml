@@ -1,0 +1,23 @@
+---
+#**************************************************************
+
+# Script Name: dmsp_vm_reboot.yaml
+
+# Description: This playbook will reboot the VMs
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Reboot the VMs
+  hosts: update_reboot
+  gather_facts: true
+  ignore_errors: true
+  become_user: root
+  become: true
+  tasks: 
+    - name: Reboot
+      reboot: 
+       msg: "Reboot required for updated kernel"
+      when: ansible_hostname is not search('pmsplb|awx|omsp|odia|cmspclearcase|tvm')

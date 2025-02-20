@@ -1,0 +1,62 @@
+---
+#**************************************************************
+
+# Script Name: ubuntu_prepatch_check.yml
+
+# Description: This script will check Package dependency status, available kernel updates etc
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+############################################################################################################
+# This will check if servers are registered to satellite and also check package dependency issues, free disk space  #
+############################################################################################################
+- name: Ubuntu prepatch check
+  hosts: all
+  gather_facts: true
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks:
+    - name: Check for updates
+      shell: apt update
+      async: 360
+      poll: 60
+      register: available_updates
+    - name: disable kernel update
+      shell: apt-mark hold linux-generic linux-libc-dev linux-headers-generic linux-image-generic linux-firmware
+      register: results
+    - name: Check for package dependency issues and free disk space.
+      shell: apt --simulate upgrade
+      async: 360
+      poll: 60
+      register: dependency_check
+      failed_when: "'0 upgraded, 0 newly installed' in dependency_check.stdout"
+# ##########################################################
+#  This task will append a file with patch status          #
+############################################################
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{dependency_check.changed}} - {{dependency_check.stdout_lines}}"
+        path: /tmp/sanity_check_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes 
+    - name: Show the VMs which are having updates
+      debug:
+       var: available_updates.stdout_lines
+    - name: Show the dependency check results
+      debug:
+       var: dependency_check.stdout_lines
+    - name: Check for kernel updates.
+      shell:  apt list --upgradable | grep linux
+      register: kernel_update_check
+      async: 360
+      poll: 60
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{kernel_update_check.changed}} - {{kernel_update_check.stdout_lines}}"
+        path: /tmp/kernel_update_check_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes      
+    - name: Show the dependency check results
+      debug:
+       var: kernel_update_check.stdout_lines

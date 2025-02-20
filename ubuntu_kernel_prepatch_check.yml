@@ -1,0 +1,42 @@
+---
+#**************************************************************
+
+# Script Name: ubuntu_kernel_prepatch_check.yml
+
+# Description: This script will refresh apt repository and check for available kernel updates etc
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+############################################################################################################
+# This will check if servers are registered to satellite and also check package dependency issues, free disk space  #
+############################################################################################################
+- name: Ubuntu prepatch check
+  hosts: all
+  gather_facts: false
+  become_user: root
+  become: true
+  tasks:
+    - name: Check for updates
+      shell: apt update | grep upgradable
+      async: 3600
+      poll: 300
+      register: available_updates
+    - name: check if reboot is required
+      shell: cat /run/reboot*
+      register: reboot_hint
+      failed_when: reboot_hint.rc in [0]
+    - name: enable kernel update
+      shell: |
+       apt-mark unhold linux-generic linux-libc-dev linux-headers-generic linux-image-generic linux-firmware
+      register: results
+    - name: check for kernel updates
+      shell: apt --simulate upgrade | grep linux-generic
+      register: kernel_update_available
+    - name: Show if kernel updates are available
+      debug: msg="{{ kernel_update_available.stdout_lines }}"
+    - name: disable kernel update
+      shell: |
+        apt-mark hold linux-generic linux-libc-dev linux-headers-generic linux-image-generic linux-firmware
+      register: results

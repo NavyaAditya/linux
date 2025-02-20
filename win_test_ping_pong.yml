@@ -1,0 +1,23 @@
+---
+#**************************************************************
+# Script Name: template.yml
+# Description: Use this template when developing scripts
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+# Ansible playbook to run Windows Update and restart, if required
+#
+
+
+- name:  Windows Server Update
+  hosts: all
+  gather_facts: false
+  strategy: free
+  tasks:
+    - name: check servers are up to date or not
+      win_shell:  Get-HotFix |sort InstalledOn -Descending |select -First 5
+      register: is_uptodate
+    - debug: 
+        var: is_uptodate
+    
+

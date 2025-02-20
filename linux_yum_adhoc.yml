@@ -1,0 +1,25 @@
+---
+#**************************************************************
+# Script Name: linux_yum_adhoc.yml
+# Description: Runs a basic yum command against to linux host
+# Author: SathishG
+# Organization: Harman
+#**************************************************************
+
+
+
+- name: Ping check
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Start checking yum repo 
+      shell: yum list installed | wc -l
+      register: is_cmd_executed
+    - name: copy the output to a local file
+      copy:
+        content: "{{ is_cmd_executed.stdout }}"
+        dest: "/tmp/sate_host.csv"
+      delegate_to: localhost
+    #- debug:
+    #    var: is_cmd_executed.stdout_lines
+        

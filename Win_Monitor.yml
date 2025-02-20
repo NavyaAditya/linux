@@ -1,0 +1,14 @@
+---
+# This playbook to run Monitor-pmspidg01.ps1 on one of Windows system
+
+- name: Monitor Windows services
+  hosts: all 
+  gather_facts: false
+  vars:
+          ansible_winrm_server_cert_validation: ignore
+  tasks:
+   - name: Run Powershell script 
+     #win_command: powershell.exe -ExecutionPolicy ByPass -File C:\scripts\monitor\Monitor-Windows.ps1
+     win_shell: C:\scripts\monitor\Monitor-Windows.ps1
+
+

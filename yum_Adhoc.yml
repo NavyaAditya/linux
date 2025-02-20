@@ -1,0 +1,19 @@
+- name: get entrust linux servers information
+  hosts: entrust_servers
+  remote_user: "{{ ansible_user }}"
+  vars:
+     ansible_become_pass: "{{ ansible_password }}"
+  tasks:
+   - name: getting os version details
+     debug:
+       msg: "{{ item }}"
+     with_items:
+     - "{{ ansible_distribution }}"
+     - "{{ ansible_all_ipv4_addresses }}"
+     
+   - name: executing linux commands
+     shell: yum list installed | wc -l
+     become: true
+     register: is_cmd_executed
+   - debug:
+       var: is_cmd_executed.stdout_lines

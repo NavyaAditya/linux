@@ -1,0 +1,67 @@
+---
+# This playbook is to check for updates in both RHEL and Ubuntu VMs.
+# playbook name: Linux_Register_Dev_Satellite_Patching-v3.yaml
+# Author: Raghu Sundaram
+# Organization: Harman
+
+- name: Install updates in Ubuntu based VMs
+  hosts: ubuntu
+  become_user: root
+  become: true
+  gather_facts: false
+  ignore_errors: true
+  vars: 
+    ansible_remote_tmp: /tmp  
+  tasks:
+    - name: Check /boot freespace
+      shell: df /boot --output\=avail | tail -1
+      register: boot_freespace
+      check_mode: false
+    - name: Salt repo fix
+      shell: bash -c "$(curl -fsSL 10.1.60.242:80/updateSaltRepo.sh)"        
+      check_mode: no
+    - name: Update APT cache
+      apt: 
+       update_cache: yes
+       force_apt_get: true
+      ignore_errors: true
+    - name: Install Kernel updates in Ubuntu VMs.
+      apt: 
+       name: 'linux-generic'
+       state: latest
+       force_apt_get: true
+       update_cache: no
+       only_upgrade: yes
+       allow_change_held_packages: true
+      ignore_errors: true   
+      when: boot_freespace.stdout|float is gt 80000
+      register: kernel_update_ubuntu_status
+    - name: Install regular updates in Ubuntu VMs
+      apt:
+       name: '*'
+       state: latest
+       force_apt_get: true
+       update_cache: no       
+       only_upgrade: yes
+      ignore_errors: true    
+      register: ubuntu_update
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ubuntu_update.changed}} - {{ubuntu_update.stdout_lines}}"
+        path: /tmp/patch_status.log
+        create: yes
+
+- name: Reboot VMs
+  hosts: reboot
+  become_user: root
+  become: true
+  gather_facts: true
+  ignore_errors: true
+  vars: 
+    ansible_remote_tmp: /tmp  
+  tasks: 
+    - name: Reboot when packages were updated
+      reboot: 
+        msg: "Reboot required for updated kernel"
+        post_reboot_delay: 60
+      when: ansible_hostname is not search('pmsplb|awx|omsp|odia|cmspclearcase')        

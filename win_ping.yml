@@ -1,0 +1,19 @@
+---
+#**************************************************************
+# Script Name: win_ping.yml
+# Description: Runs a basic ansible win_ping agains a windows host
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+# 
+#
+# https://docs.ansible.com/ansible/2.5/modules/ping_module.html
+
+
+- name: Win Ping check
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Start win_ping
+      win_ping:
+        

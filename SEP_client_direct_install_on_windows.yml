@@ -1,0 +1,11 @@
+---
+# This playbook tests software installation on Windows hosts
+
+- name: Install SEP client
+  hosts: all 
+  gather_facts: false
+  tasks:
+      - name: Install SEP client on windows machines
+        win_package:
+          path: C:\SEPClient\Sep64.msi
+          state: present

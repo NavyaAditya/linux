@@ -1,0 +1,32 @@
+---
+# This playbook is for SEP software installation on Windows hosts
+- name: Install SEP client
+  hosts: all
+  vars:
+    - svc_awxpatch_password: !vault |
+        $ANSIBLE_VAULT;1.1;AES256
+        37313964653634316536663164373234336238613537656164356634343861623862636364323361
+        6233316165663439386230326330653136663962383537610a323566386536616362336233383530
+        63636333343731653537663934373061633461666233323237316464643561353730303339396235
+        3730643964653936330a653032373239373339653764303932343165663865323264663730326465
+        37323162626632653032336533346338303761393139346364633766376338383535
+
+  gather_facts: false
+
+  tasks:
+      - name: Copy SEP client
+        win_copy:
+          src: \\EDCVDI7D-145.corporate.datacard.com\SEPClient 
+          dest: C:\Temp\
+          remote_src: yes
+        become: yes
+        become_method: runas
+        become_flags: logon_type=new_credentials logon_flags=netcredentials_only
+        vars:
+          ansible_become_user: corporate\svc_awxpatch
+          ansible_become_password: "{{ svc_awxpatch_password }}"
+
+      - name: Install SEP client on windows machines
+        win_package:
+          path: C:\Temp\SEPClient\Sep64.msi
+          state: present

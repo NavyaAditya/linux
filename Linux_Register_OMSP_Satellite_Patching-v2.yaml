@@ -1,0 +1,40 @@
+---
+# This playbook is to apply updates ODIA VMs.
+# playbook name: Linux_Register_ODIA_Satellite_Patching-v2
+# Author: Raghu Sundaram
+# Organization: Harman
+
+- name: Install Updates for Oracle ODIA EBS VMs
+  hosts: all
+  become_user: root
+  become: true
+  ignore_errors: true
+  gather_facts: true
+  vars: 
+    ansible_remote_tmp: /tmp  
+  tasks: 
+    - name: Install kernel updates
+      yum: 
+       name: 'kernel'
+       state: latest
+       update_cache: yes
+       update_only: yes
+      register: kernel_update_rhel_status
+    - name: Log Patch update status for Kernel updates
+      lineinfile:
+        line: "{{ansible_host}} - {{kernel_update_rhel_status.changed}} - {{kernel_update_rhel_status.msg}}"
+        path: /tmp/kernel_update_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes
+    - name: Install regular updates on RH based VMs
+      yum: 
+       name: '*'
+       state: latest
+       update_cache: yes
+       update_only: yes
+       exclude: salt*
+      register: regular_updates_rhel_status
+    - name: Log Patch update status
+      lineinfile:
+        line: "{{ansible_host}} - {{regular_updates_rhel_status.changed}} - {{regular_updates_rhel_status.msg}}"
+        path: /tmp/patch_status_{{ansible_hostname}}_{{ ansible_date_time.date }}.log
+        create: yes

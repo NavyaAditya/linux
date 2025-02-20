@@ -1,0 +1,119 @@
+---
+#**************************************************************
+# Script Name: template.yml
+# Description: Use this template when developing scripts
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+# Ansible playbook to run Windows Update and restart, if required
+#
+
+
+- name:  Windows Server Update
+  hosts: all
+  gather_facts: false
+  strategy: free
+  vars: 
+  
+    date: "{{ ansible_date_time.date }}"
+
+
+  
+  tasks:
+     
+  # Check if reboot is required if required then reboot
+  # Wait for server to come back on line <--
+  # Once back online check for reboot again then start updating
+  # Once updates are done reboot if required
+  # Wait for machine to come on line
+  # Once it comes back online check for updates again.
+    
+    - name: Check for reboot notification
+      win_shell: |
+        function Test-PendingReboot
+        {
+        if (Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending" -EA Ignore) { return $true }
+        if (Get-Item "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -EA Ignore) { return $true }
+        if (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -Name PendingFileRenameOperations -EA Ignore) { return $true }
+        try { 
+        $util = [wmiclass]"\\.\root\ccm\clientsdk:CCM_ClientUtilities"
+        $status = $util.DetermineIfRebootPending()
+        if(($status -ne $null) -and $status.RebootPending){
+        return $true
+        }
+        }catch{}
+        return $false
+        }
+        Test-PendingReboot
+      register: rebootreq
+    - debug: var=rebootreq
+      
+    - name: Reboot if reboot required
+      win_reboot:
+        reboot_timeout: 1500
+        post_reboot_delay: 120
+      when: rebootreq.stdout=="True\r\n"
+
+    - name: Wait for port 5986 to become open on the host, don't start checking for 10 seconds
+      win_wait_for: port=5986 delay=10
+
+    # - setup:
+    #    filter: ansible_reboot_pending
+
+    # - debug: var=ansible_reboot_pending
+
+    # - name: Reboot host if required
+    #   reboot:
+    #   when:
+    #     ansible_reboot_pending == True
+
+    - name: Running Windows Update
+      win_updates:
+        category_names: ['SecurityUpdates','CriticalUpdates','UpdateRollups', 'Updates', 'DefinitionUpdates']
+        reboot: yes
+        post_reboot_delay: 120
+      register: result
+   #  async: 3600
+   #  poll: 60
+   #  retries: 10
+   #  delay: 30
+   #  until: result is not failed
+    - debug: var=result
+
+
+
+    # reboot only if required
+    - name: Reboot after patching is done
+      win_reboot:
+      when:
+        result.reboot_required
+    
+    - name: Wait for port 5986 to become open on the host, don't start checking for 10 seconds
+      win_wait_for: port=5986 delay=10
+  
+    - name: checking missing updates
+      win_updates:
+        state: searched
+      register: available_updates
+
+    - name: second time Running Windows Update
+      win_updates:
+        category_names: ['SecurityUpdates','CriticalUpdates','UpdateRollups', 'Updates', 'DefinitionUpdates']
+        reboot: yes
+        post_reboot_delay: 120
+      when: available_updates.found_update_count|int >= 1
+      register: post_result
+   
+    - name: Reboot after patching is done
+      win_reboot:
+      when:
+        - post_result.reboot_required
+        - available_updates.found_update_count|int >= 1
+      ignore_errors: true
+      
+    - name: Wait for port 5986 to become open on the host, don't start checking for 10 seconds
+      win_wait_for: port=5986 delay=10
+    
+
+       
+

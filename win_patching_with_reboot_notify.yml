@@ -1,0 +1,89 @@
+---
+#**************************************************************
+# Script Name: win_patching_with_reboot_notify_clearflag.yml
+# Description: Use this template when developing scripts
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+
+
+- name:  Windows Update
+  hosts: all
+  gather_facts: false
+  vars:
+    machineip: "{{ lookup('dig', inventory_hostname ) }}"
+
+  tasks:
+    - debug: msg="The value of machineip in dns is {{ machineip }}"
+    #Add task to perform a ping if there is no response try again 5 more times before marking as failed and move on to the next system
+
+    - name: If machineip has a value then start working
+      block:
+        - setup:
+            filter: ansible_reboot_pending
+          register: setup
+        - debug: var=setup 
+        - name: Configure System RestorePoint
+          block:
+            - name: Start the volume shadow copy service
+              win_service:
+                name: VSS
+                start_mode: auto
+                state: started
+            - name: Start the Microsoft Software Shadow Copy Provider
+              win_service:
+                name: swprv
+                start_mode: auto
+                state: started
+            - name: Start the Microsoft Storage Spaces SMP
+              win_service:
+                name:  smphost
+                start_mode: auto
+                state: started
+            - name: Enable System Restore
+              win_shell: |
+                Enable-ComputerRestore -drive 'C:'
+            - name: Create system checkpoint
+              win_shell: |
+                Checkpoint-Computer -Description 'RemoveRebootFlag' -RestorePointType MODIFY_SETTINGS
+          when:
+            ansible_reboot_pending == True
+        
+        - block:
+            - name: Clear reboot flag in HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\pendingfileoperations
+              win_regedit: 
+                path: 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager'
+                name: PendingFileRenameOperations
+                state: absent
+                delete_key: yes
+              when:
+                ansible_reboot_pending == True 
+            - name: Clear reboot flag in HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\rebootrequired
+              win_regedit: 
+                path: 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
+                state: absent
+              when:
+                ansible_reboot_pending == True 
+          ignore_errors: yes
+
+        - name: Running Windows Update
+          win_updates:
+            category_names: ['SecurityUpdates','CriticalUpdates','UpdateRollups', 'Updates', 'DefinitionUpdates']
+          register: result
+          async: 2700 
+          poll: 60
+          # retries: 5
+          #delay: 30
+          #until: result is not failed
+        - debug: var=result
+
+        # reboot only if required
+        - name: Create schedule using the powershell script
+          win_shell: |
+            Copy-Item '\\corporate.datacard.com\NETLOGON\rebootedc' C:\ProgramData\awx\ -Recurse -Force
+            C:\ProgramData\awx\rebootedc\reboot.ps1
+          when: result.reboot_required  
+
+      # when: machineip|length > 0
+      when: machineip|regex_search("(([0-9](?!\d)|[1-9][0-9](?!\d)|1[0-9]{2}(?!\d)|2[0-4][0-9](?!\d)|25[0-5](?!\d))[.]?){4}")
+        

@@ -1,0 +1,19 @@
+---
+# This playbook is to Refresh the Content Views in RedHat Satellite for RHEL VMs.
+# playbook name: redhat_satellite_cv_refresh.yml
+# Author: Raghu Sundaram
+# Organization: Harman
+
+- name: Install updates in RedHat and Ubuntu based VMs
+  hosts: rhel
+  become_user: root
+  become: true
+  ignore_errors: true
+  tasks:
+    - name: Refresh RedHat Satellite Content Views in the VM.
+      shell: |
+        yum clean all 
+        subscription-manager refresh
+        yum makecache
+      async: 3600
+      poll: 90

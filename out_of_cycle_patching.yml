@@ -1,0 +1,33 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to apply out-of-cycle  invidual patches via yum command on RHEL VMs.
+#        
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: out-of-cycle_patching.yml
+
+# Description: Use this playbook  to roll out out-of-cycle specific patches for RHEL VMs
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Install security patches out of cycle 
+  become_user: root
+  become: true
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Add Repo
+      shell: subscription-manager repos --enable=satellite-client-6-for-rhel-8-x86_64-rpms
+      register: repo_addition
+      check_mode: no
+    - name: Install package
+      yum:
+       name: 'qpid-proton-c'
+       state: latest
+       update_cache: yes
+       update_only: yes
+      register: update_status

@@ -1,0 +1,19 @@
+---
+#**************************************************************
+# Script Name: linux_ping.yml
+# Description: Runs a basic ansible ping agains a linux host
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+# 
+#
+# https://docs.ansible.com/ansible/2.5/modules/ping_module.html
+
+- name: Ping Check
+  hosts: all
+  vars: 
+    ansible_remote_tmp: /tmp
+  gather_facts: false
+  tasks:
+    - name: Start ping
+      ping:

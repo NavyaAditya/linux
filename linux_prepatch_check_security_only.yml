@@ -1,0 +1,29 @@
+---
+#**************************************************************
+
+# Script Name: linux_prepatch_check.yml
+
+# Description: This script will check for package dependency issues excluding kernel package, before the actual patching activity
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Play check for patching feasibility in RH based VMs
+  hosts: all
+  strategy: free
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+    - name: Check for package dependency issues and free disk space.
+      shell: yum -y update  --security --exclude=kmod*,kernel* --setopt tsflags=test | grep download
+      register: dependency_check
+      async: 3600
+      poll: 60
+
+    - name: Show the dependency check results
+      debug:
+       var: dependency_check.stdout_lines
