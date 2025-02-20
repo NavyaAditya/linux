@@ -1,0 +1,24 @@
+---
+#**************************************************************
+
+# Script Name: fix_dns.yml
+
+# Description: This playbook will apply the specified dns configuration to RHEL based VMs
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Play check for kernel update availability in RH based VMs
+  hosts: all
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: no
+  tasks: 
+    - name: swap dns entries
+      shell: |
+        sed -i '0,/10.1.214.39/s/10.1.214.39/10.1.214.38/' /etc/resolv.conf
+        sed -i '0,/10.1.214.38/s/10.1.214.38/10.1.214.39/' /etc/resolv.conf
+      register: output  

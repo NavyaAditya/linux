@@ -1,0 +1,35 @@
+---
+#********************************************************************************
+# Script Name: enable_kernel_update_ubuntu,yml
+# Description: Use this playbook to allow Linux kernel packages to be updated in Ubuntu VMs
+# Author: Raghu Sundaram
+# Organization: Harman
+#********************************************************************************
+# Ansible playbook to lock and disable / expire user account
+#
+#
+
+- name: Enable kernel package updates in Ubuntu based VMs
+  hosts: all
+  become_user: root
+  become: true
+  gather_facts: true
+  ignore_errors: true
+  strategy: free
+  vars:
+    ubuntu_kernel_packages:
+      - linux-generic
+      - linux-headers-generic
+      - linux-headers-generic-pae
+      - linux-image-generic
+      - linux-image-generic-pae
+
+  tasks:
+    - name: Enable kernel updates in Ubuntu VMs
+      dpkg_selections:
+       name: "{{ item }}"
+       selection: unhold
+      loop: "{{ ubuntu_kernel_packages }}"
+      when: ansible_os_family == "Debian"
+      async: 3600
+      poll: 90

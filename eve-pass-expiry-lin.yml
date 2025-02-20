@@ -1,0 +1,22 @@
+---
+- name: Expire eve password
+  hosts: all
+  become_user: root
+  become: true
+  gather_facts: no
+  tasks: 
+   - name: Check password expiration.
+     shell: chage -l eve
+     register: password_expiration
+   - name: Display the password expiration information
+     debug:  
+       var: password_expiration
+   - name: Expire the eve password
+     shell: passwd --expire eve
+     register: expire_password
+   - name: Check updated password expiration date
+     shell: chage -l eve
+     register: updated_password_expiration_info  
+   - name: Display the current password expiration value
+     debug:
+       var: updated_password_expiration_info  

@@ -1,0 +1,24 @@
+---
+#**************************************************************
+
+# Script Name: fix_dns.yml
+
+# Description: This playbook will fix the folder permission issue for service account for IDM enrolled VMs
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Fix the folder permission issue for service account
+  hosts: all
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: no
+  tasks: 
+    - name: Remove errourness service account's home folder
+      file: 
+       state: absent
+       path: /home/corporate.datacard.com/svc_awxpatch   
+      register: output

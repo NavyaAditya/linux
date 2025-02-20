@@ -1,0 +1,26 @@
+---
+#**************************************************************
+
+# Script Name: fix_yum_rh7_mmsp.yml
+
+# Description: This playbook will re-register RH VMs with the Redhat Satellite
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Re-Register the RH VMs with Redhat Satellite
+  hosts: all
+  strategy: free
+  gather_facts: false
+  become_user: root
+  become: true
+  tasks: 
+    - name: fix yum
+      shell: bash -c "$(curl -fsSL 10.1.60.242:80/Reg.sh)"
+      register: yum_output
+
+    - name: Show output
+      debug:
+       var: yum_output.stdout_lines

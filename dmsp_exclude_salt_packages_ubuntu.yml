@@ -1,0 +1,27 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to exclude salt packages in Ubuntu VMs.
+#        
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: dmsp_exclude_salt_packages_ubuntu.yml
+
+# Author: Raghu Sundaram
+# Organization: Harman
+- name: Exclude salt packages from update
+  hosts: ubuntu
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: no
+  vars:
+      salt_packages:
+      - salt-master
+      - salt-minion
+  tasks:
+    - name: Exclude salt packages from update
+      dpkg_selections:
+       name: "{{ item }}"
+       selection: hold
+      loop: "{{ salt_packages }}"

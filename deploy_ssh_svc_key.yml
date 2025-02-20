@@ -1,0 +1,26 @@
+---
+#********************************************************************************
+# Script Name: deploy_ssh_svc_key.yml
+# Description: Use this playbook to deploy the svc_satellite key to servers
+# Author: ElstonC
+# Organization: Harman
+#********************************************************************************
+# Ansible playbook to deploy svc_satellite key to existing  servers
+# This playbook should be run from the satellite server
+#
+ - hosts: all
+   gather_facts: no
+ 
+   - name: Add key to the authorized_keys file
+     lineinfile:
+           dest=/home/svc_satellite/.ssh/authorized_keys
+           line="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDSPZ7hbCGW4p3OSEJz6p2mH+b9Ew8qEZy+C7/Rs4HHC1KYJmdQR1dC4Aumo4M4YmRp+AQWyoWIB+/6Q4JWXRz9FXhJeyIMg74hhYROjgFGlnHyId6b3KEt2lW0JRZwo7GkwouEe5TsJ/qlxFUjpVXlucoOVP7mOd0RWp/FC0TU50WOpzQeUgGOPXqgASOd8ImWrz/mNixlUGANmrgwUgdr0ePOCuQi9WxE8waQNSRHGQtjGDAWHyOCv9srk3k9IFgoH8KYmq09KUNiFxWEqe27UwbUvyDskQ2ARlbiUtgykDhKrs0DuIDt77l46L1jqWt2rrHxDLw2lUycoTVtr+dmOk4VjDAsTWuECTB5LfogZcWXCzPPJ0Lg2h/jSPf4q+N5+nPvdariq22Pw2sGI0hDcE5tU16PI06Et7iq6wUJWSeXnYod0kU7ik0QNPReRD5QggZs75p4M0MZCxY/aksYwUou2FW2DPZD+aPIEMh2BY8lghbViWCOvneV+UA2jGE= svc_satellite@mmspawxapp01"
+           state=present
+           backup=yes
+     notify:
+       - restart ssh
+ handlers:
+   - name: restart ssh
+     service:
+       name=sshd
+       state=restarted

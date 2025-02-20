@@ -1,0 +1,29 @@
+---
+#**************************************************************
+
+# Script Name: fix_fs_perm.yml
+
+# Description: This playbook will fix home folder for svc_awxpatch user in RHEL based VMs to resolve file system permission issue
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Fix the folder permission and ownership
+  hosts: all
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+    - name: Fix folder permission
+      shell: |
+       chmod 755 /home/CORPORATE/
+       chmod 755 /home/corporate.datacard.com/
+    - name: Fix folder permission for service account 
+      shell: |
+       chmod 755 /home/CORPORATE/svc_awxpatch/
+       chmod 755 /home/corporate.datacard.com/svc_awxpatch/
+       chown svc_awxpatch@corporate.datacard.com:svc_awxpatch@corporate.datacard.com /home/CORPORATE//svc_awxpatch/
+       chown svc_awxpatch@corporate.datacard.com:svc_awxpatch@corporate.datacard.com /home/corporate.datacard.com/svc_awxpatch/

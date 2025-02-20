@@ -1,0 +1,24 @@
+
+---
+#********************************************************************************
+# Script Name: disable-user-linux.yml
+# Description: Use this playbook to lock as well as disable / expire the specified user account
+# Author: Raghu Sundaram
+# Organization: Harman
+#********************************************************************************
+# Ansible playbook to lock and disable / expire user account
+#
+#
+
+- name: Expire eve user account
+  hosts: all
+  become_user: root
+  become: true
+  gather_facts: no
+  tasks: 
+   - name: Lock the eve account to prevent interactive authentication
+     shell : usermod -L eve
+     register: lock user
+   - name: Disable the eve account to prevent even non interactive authentication.
+     shell: chage -E0 eve
+     register: expire_user

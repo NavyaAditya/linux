@@ -1,0 +1,34 @@
+---
+#**************************************************************
+
+# Script Name: deploy_security_update.yml
+
+# Description: This playbook was created to selectively deploy security patches
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Deploy security patches
+  hosts: all
+  strategy: free  
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+############################################################################################################
+# This will check for most recent patching activity  #
+############################################################################################################
+
+    - name: Add Repo
+      shell: subscription-manager repos --enable=satellite-client-6-for-rhel-8-x86_64-rpms
+      register: repo_addition
+    - name: Install package
+      yum:
+       name: 'qpid-proton-c'
+       state: latest
+       update_cache: yes
+       update_only: yes
+       register: update_status

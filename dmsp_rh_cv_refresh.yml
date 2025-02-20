@@ -1,0 +1,26 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to refresh RedHat Satellite Content Views in DMSP VMs.
+#        
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: dmsp_rh_cv_refresh.yml
+
+# Author: Raghu Sundaram
+# Organization: Harman
+- name: refresh content views
+  hosts: rhel
+  become_user: root
+  become: true
+  gather_facts: false
+  vars: 
+    ansible_remote_tmp: /tmp  
+  tasks:
+    - name: Refresh RedHat Satellite Content Views in the VM.
+      shell: |
+        yum clean all 
+        subscription-manager refresh
+        yum makecache
+      async: 3600
+      poll: 90

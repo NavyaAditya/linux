@@ -1,0 +1,31 @@
+---
+#**************************************************************
+
+# Script Name: dmsp_enable_kernel_updates_ubuntu.yml
+
+# Description: This playbook will unhold kernel packages in Ubuntu VMs
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Unhold kernel packages
+  hosts: ubuntu
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: no
+  vars:
+    ubuntu_kernel_packages:
+      - linux-generic
+      - linux-headers-generic
+      - linux-headers-generic-pae
+      - linux-image-generic
+      - linux-image-generic-pae
+  tasks: 
+    - name: Enable kernel updates in Ubuntu VMs
+      dpkg_selections:
+       name: "{{ item }}"
+       selection: install
+      loop: "{{ ubuntu_kernel_packages }}"

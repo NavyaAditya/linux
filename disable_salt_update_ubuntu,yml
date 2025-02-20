@@ -1,0 +1,31 @@
+---
+#********************************************************************************
+# Script Name: disable_salt_update_ubuntu,yml
+# Description: Use this playbook to prevent salt packages from getting updated in Ubuntu VMs
+# Author: Raghu Sundaram
+# Organization: Harman
+#********************************************************************************
+# Ansible playbook to lock and disable / expire user account
+#
+#
+
+- name: Disable salt package updates in Ubuntu based VMs
+  hosts: all
+  become_user: root
+  become: true
+  gather_facts: true
+  ignore_errors: true
+  strategy: free
+  vars:
+    salt_packages:
+      - salt-master
+      - salt-minion
+  tasks:
+    - name: Exclude salt packages from update
+      dpkg_selections:
+       name: "{{ item }}"
+       selection: hold
+      loop: "{{ salt_packages }}"
+      when: ansible_os_family == "Debian"
+      async: 3600
+      poll: 90                   

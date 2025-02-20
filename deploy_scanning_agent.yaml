@@ -1,0 +1,25 @@
+---
+#**************************************************************
+
+# Script Name: deploy_salt_minion.yaml
+
+# Description: This playbook will deploy Scanning agent for TVM.
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: deploy Scanning Agent
+  hosts: all
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: no
+  tasks: 
+    - name: hit the URL
+      shell: bash -c "$(curl -fsSL https://binary.entrust.com:8443/artifactory/infra-tools/scan_assistant.sh)"
+      register: output
+    - name: print the status
+      debug:
+       var: output

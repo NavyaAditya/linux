@@ -1,0 +1,73 @@
+---
+#********************************************************************************
+# Script Name: deploy_ssh_svc_account.yml
+# Description: Use this playbook to deploy the svc_satellite account to servers
+# Author: ElstonC
+# Organization: Harman
+#********************************************************************************
+# Ansible playbook to deploy svc_satellite account to servers
+#
+#
+ - hosts: all
+   vars:
+     - svc_satellite_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          63306663646230646566316563366262633633373638616532643631303761663265656263336436
+          3033653362346562353332303038386537323962363365380a346634356331356231303065313362
+          37303961303265333031336161333838393638363433373539346363346337616334363666616362
+          6231316666346661390a323262633466333531386566333737613861323635663138643135326137
+          3665
+
+   gather_facts: no
+   remote_user: eve
+ 
+   tasks:
+   - name: Add a new user named svc_satellite
+     user:
+          name=svc_satellite
+          password={{ svc_satellite_password }}
+ 
+   - name: Add svc_satellite user to the sudoers
+     copy:
+          dest: "/etc/sudoers.d/svc_satellite"
+          content: "svc_satellite  ALL=(ALL)  NOPASSWD: ALL"
+ 
+   - name: Deploy SSH Key
+     authorized_key: user=svc_satellite
+                     key="{{ lookup('file', 'id_rsa.pub') }}"
+                     state=present
+ 
+   - name: Disable Password Authentication
+     lineinfile:
+           dest=/etc/ssh/sshd_config
+           regexp='^PasswordAuthentication'
+           line="PasswordAuthentication yes"
+           state=present
+           backup=yes
+     notify:
+       - restart ssh
+ 
+   - name: Disable Root Login
+     lineinfile:
+           dest=/etc/ssh/sshd_config
+           regexp='^PermitRootLogin'
+           line="PermitRootLogin yes"
+           state=present
+           backup=yes
+     notify:
+       - restart ssh
+
+   - name: allow eve and svc_satellite 
+     lineinfile:
+           dest=/etc/ssh/sshd_config
+           line="AllowUsers eve svc_satellite"
+           state=present
+           backup=yes
+     notify:
+       - restart ssh
+ 
+   handlers:
+   - name: restart ssh
+     service:
+       name=sshd
+       state=restarted
