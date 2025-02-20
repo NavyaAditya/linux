@@ -1,0 +1,50 @@
+---
+#**************************************************************
+
+# Script Name: test_playbook.yml
+
+# Description: This playbook was created to explore new strategies in Ansible/AWX
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Check package on rhel based VMs
+  hosts: rhel
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+############################################################################################################
+# This will check for most recent patching activity  #
+############################################################################################################
+
+    - name: Check for package availability 
+      yum:
+       name: 'httpd'
+       state: latest
+       update_cache: yes
+       update_only: yes
+       register: output_rhel
+    - debug:
+       var: output_rhel
+- name: Check package on Ubuntu based VMs
+  hosts: ubuntu
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+   - name: Check for package availability on Ubuntu VMs
+     apt:
+       name: 'apache2'
+       state: latest
+       force_apt_get: true
+       update_cache: yes
+       only_upgrade: yes
+     register: output_ubuntu
+     check_mode: true
+   - debug:
+       var: output_ubuntu

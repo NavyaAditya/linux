@@ -1,0 +1,32 @@
+---
+#**************************************************************
+# Script Name: addhost.yml
+# Description: Use this template for static inventory on awx
+# Author: ElstonC
+# Organization: Harman
+#**************************************************************
+- hosts: localhost
+  gather_facts: 'no'
+  tasks:
+    - name: Add hosts servers
+      shell: |
+        tower-cli host create --name "{{ item.name }}" --inventory "{{ item.inventory }}" --variables "{{ item.variables }}"
+      with_items:
+         - { name: trea201901, inventory: 12, variables: 'ansible_host: 10.44.33.53' }
+         - { name: trea201902, inventory: 12, variables: 'ansible_host: 10.44.33.54' }
+         - { name: trea201903, inventory: 12, variables: 'ansible_host: 10.44.33.55' }
+         - { name: testrhel801, inventory: 13, variables: 'ansible_host: 10.44.33.51' }
+         - { name: testrhel802, inventory: 13, variables: 'ansible_host: 10.44.33.52' }
+         - { name: tshkwin1001, inventory: 8, variables: 'ansible_host: 10.2.4.200' }
+         - { name: tshkwin1002, inventory: 8, variables: 'ansible_host: 10.2.4.203' }
+         - { name: tshkwin1003, inventory: 8, variables: 'ansible_host: 10.2.4.202' }
+         - { name: tbatccen701, inventory: 10, variables: 'ansible_host: 10.1.50.246' }
+         - { name: tbatchlin02, inventory: 10, variables: 'ansible_host: 10.1.50.245' }
+         - { name: tbatchlin03, inventory: 10, variables: 'ansible_host: 10.1.195.224' }
+         - { name: tbatchlin701, inventory: 10, variables: 'ansible_host: 10.1.50.243' }
+         - { name: tbatchlin801, inventory: 10, variables: 'ansible_host: 10.1.195.247' }
+         - { name: tmspwin1001, inventory: 11, variables: 'ansible_host: 10.1.50.229' }
+         - { name: tmspwin1002, inventory: 11, variables: 'ansible_host: 10.1.50.194' }
+         - { name: tmspwin1003, inventory: 11, variables: 'ansible_host: 10.1.50.238' }
+         - { name: tmspwin1004, inventory: 11, variables: 'ansible_host: 10.1.50.241' }
+         - { name: tmspwin1005, inventory: 11, variables: 'ansible_host: 10.1.50.242' }
