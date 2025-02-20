@@ -1,0 +1,25 @@
+---
+#---------------------------------------------------------------
+# Script Name: check_kernel_version.yml
+# Description: This playbook will check for available kernel version
+# Author: Raghu Sundaram
+# Organization: Harman
+#------------------------------------------------------------------
+- name: Play check for kernel update availability in RH based VMs
+  hosts: all
+  gather_facts: false
+  become_user: root
+  become: true
+  tasks: 
+    - name: check installed kernel version
+      shell: yum list installed kernel
+      register: output
+    - debug:
+       var: output.stdout_lines
+
+    - name: list available kernel version
+      shell: yum list available kernel
+      register: avl_kernel_version
+
+    - debug:
+        var: avl_kernel_version

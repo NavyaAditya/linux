@@ -1,0 +1,69 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to perform 'yum update' on selected hosts.
+#        NOTE: This playbook will also reboot hosts if kernel is updated.
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: Yum_update_reboot.yml
+
+# Description: Use this playbook  to run Yumupdate and reboot if kernel is updated
+
+# Author: Sairohit Dasa
+
+# Organization: Harman
+
+#**************************************************************
+- name: Yumupdate and reboot playbook
+  become_user: root
+  become: true
+  hosts: all
+  ignore_errors: yes 
+  tasks:
+ 
+
+  ############################################################################################################
+  # This will check if servers are registered to satellite if not this will register to corporate satellite  #
+  #############################################################################################################
+
+    - name: Check if the vm is register with satellite server - Register to satellite.
+      shell: subscription-manager status
+      register: reg_status
+
+    - block:  
+        - name: Register the system if above fails
+          shell: curl -k https://pmsprhelsat01.corporate.datacard.com/pub/satRegDev.sh | bash && yum -y update 
+          when: '"\nOverall Status: Unknown" in reg_status.stdout'
+      ignore_errors: yes
+
+  ###########################################################
+  #  This task will update all latest patches              #
+  ##########################################################
+
+    - name: upgrade all packages
+      yum: 
+        name: "*"
+        state: latest
+        exclude: json*
+        skip_broken: yes
+
+  ##########################################################
+  # This will compare previous kernel with updated kernel # 
+  ##########################################################
+
+    - name: Check for reboot hint.
+      shell: LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then echo 'reboot'; else echo 'no'; fi
+      ignore_errors: true
+      register: reboot_hint
+
+  ##########################################################
+  # If kernel is updated system will be now rebooted 
+  ##########################################################
+
+    - name: Rebooting ...
+      command: sudo shutdown -r now "Reboot required for updated kernel"
+      async: 0
+      poll: 0
+      ignore_errors: true
+      when: reboot_hint.stdout.find("reboot") != -1
+      register: rebooting

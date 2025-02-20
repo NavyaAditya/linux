@@ -1,0 +1,60 @@
+---
+# This playbook is to check for updates in both RHEL and Ubuntu VMs.
+# playbook name: check_for_updates.yml
+# Author: Raghu Sundaram
+# Organization: Harman
+
+- name: Check for updates in RHEL based VMs
+  hosts: rhel
+  become_user: root
+  become: true
+  gather_facts: false
+  vars: 
+    ansible_remote_tmp: /tmp
+  tasks:
+   - name: check for Kernel updates in RH based VMs
+     yum: 
+       name: 'kernel'
+       state: latest
+       update_cache: yes
+       update_only: yes
+     tags: kernel
+     ignore_errors: true
+     register: rhel_kernel
+     check_mode: true
+   - name: check for updates on RH based VMs
+     yum: 
+       name: '*'
+       state: latest
+       update_cache: no
+       update_only: yes
+       exclude: salt*
+     tags: regular
+     check_mode: true
+     ignore_errors: true     
+- name: check for updates in Ubuntu VMs
+  hosts: ubuntu
+  gather_facts: false
+  ignore_errors: true
+  tasks:
+   - name: Check for kernel update in Ubuntu VMs
+     apt: 
+       name: 'linux-generic'
+       state: latest
+       force_apt_get: true
+       update_cache: no
+       only_upgrade: yes
+     check_mode: true
+     register: ubuntu_kernel_updates
+     when: ubuntu_kernel_updates.changed
+   - name: check for updates in Ubuntu VMs
+     apt:
+       name: '*'
+       state: latest
+       force_apt_get: true
+       update_cache: no       
+       only_upgrade: yes
+     ignore_errors: true
+     check_mode: true
+     register: ubuntu_update
+     when: ubuntu_updates.changed

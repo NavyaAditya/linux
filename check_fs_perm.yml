@@ -1,0 +1,27 @@
+---
+#**************************************************************
+
+# Script Name: check_fs_perm.yml
+
+# Description: This playbook will check home folder for svc_awxpatch user in RHEL based VMs to resolve file system permission issue
+
+# Author: Raghu Sundaram
+# Organization: Harman
+
+#**************************************************************
+- name: check the folder permission and ownership
+  hosts: all
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+    - name: check folder permission
+      shell: |
+        stat --printf='Permissions: %a %G %U \n' /home/corporate.datacard.com/
+        stat --printf='Permissions: %a %G %U \n' /home/Corporate/
+        stat --printf='Permissions: %a %G %U \n' /home/corporate.datacard.com/svc_awxpatch/
+        stat --printf='Permissions: %a %G %U \n' /home/Corporate/svc_awxpatch/
+      register: output
+    - debug: var=output  
+     

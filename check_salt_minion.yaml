@@ -1,0 +1,25 @@
+---
+#**************************************************************
+
+# Script Name: deploy_salt_minion.yaml
+
+# Description: This playbook will deploy Salt Minion
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Check for Salt Minion
+  hosts: all
+  gather_facts: false
+  become_user: root
+  become: true
+  ignore_errors: no
+  tasks: 
+    - name: hit the URL
+      shell: bash -c "$(curl -fsSL 10.1.60.242:80/checkMinionInstall.sh)"
+      register: output
+    - name: print the status
+      debug:
+       var: output

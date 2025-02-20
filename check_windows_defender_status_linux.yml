@@ -1,0 +1,19 @@
+# This playbook is to query the status of Windows Defender service in Windows VMs.
+# playbook name: check_windows_defender_status.yml
+# Author: Raghu Sundaram
+# Organization: Harman
+
+- name: Check systemd service status for Windows defender
+  hosts: all
+  become_user: root
+  become: true
+  gather_facts: false
+  tasks:
+  - name: Get Service Status
+    systemd:
+     name: "mdatp"
+    register: mdatp
+
+  - name: Show the status of the service
+    debug:
+     var: mdatp.status.ActiveState

@@ -1,0 +1,38 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to check for reboot hint on the VMs.
+#        
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: check_for_reboot_hint.yml
+
+# Description: Use this playbook to check for reboot requirement due to kernel update in Redhat based VMs
+
+# Author: Raghu Sundaram
+# Organization: Harman
+
+
+  ##########################################################
+  # This will compare previous kernel with updated kernel  
+  ##########################################################
+- name: reboot check
+  hosts: all
+  become_user: root
+  become: true
+  tasks:
+  - name: Check for reboot hint in RHEL based VMs.
+     #  shell: LAST_KERNEL=$(rpm -q --last kernel | awk 'NR==1{sub(/kernel-/,""); print $1}'); CURRENT_KERNEL=$(uname -r); if [ $LAST_KERNEL != $CURRENT_KERNEL ]; then echo 'reboot'; else echo 'no'; fi #
+    shell: yum check-update kernel
+    when: ansible_os_family == "RedHat"
+    ignore_errors: true
+    register: reboot_hint_rhel
+  - debug:
+     var: reboot_hint_rhel.stdout_lines
+  - name: Check for reboot hint in Ubuntu based VMs
+    shell: cat /var/run/reboot-required
+    when: ansible_os_family == "Debian"
+    ignore_errors: true
+    register: reboot_hint_ubuntu
+  - debug:
+     var: reboot_hint_ubuntu.stdout_lines

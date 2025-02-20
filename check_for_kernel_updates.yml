@@ -1,0 +1,36 @@
+---
+#**************************************************************
+
+# Script Name: linux_prepatch_check.yml
+
+# Description: This playbook will check for kernel update availability and installation feasibility, before the actual patching activity
+
+# Author: Raghu Sundaram
+
+# Organization: Harman
+
+#**************************************************************
+- name: Play check for kernel update availability
+  hosts: all
+  become_user: root
+  become: true
+  ignore_errors: yes
+  tasks: 
+    - name: Check /boot freespace
+      shell: df /boot --output\=avail | tail -1
+      register: boot_freespace
+    - debug:
+        var: boot_freespace
+    - name: Check for kernel updates in RHEL VMs
+      shell: yum list available kernel
+      register: rhel
+#      failed_when: "'Nothing' in rhel.stdout"
+      when: ansible_os_family == "RedHat" and boot_freespace.stdout|float is gt 80000
+    - debug:
+       var: rhel.stdout_lines
+    - name: Check for kernel updates in Ubuntu VMs
+      shell: apt list --upgradable linux*
+      register: ubuntu
+      when: ansible_os_family == "Debian"      
+    - debug:
+       var: ubuntu.stdout_lines

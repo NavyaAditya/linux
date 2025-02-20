@@ -1,0 +1,16 @@
+# This playbook is to query the status of Windows Defender service in Windows VMs.
+# playbook name: check_windows_defender_status.yml
+# Author: Harsha Shankarachari
+# Organization : Harman
+
+- name: Check Windows service status for Windows defender
+  hosts: all 
+  gather_facts: false
+  tasks:
+  - name: Check Windows service status for Windows defender
+     ansible.windows.win_service_info
+    name: windefend
+    register: service_info
+  - name: Show the status of the service
+    debug:
+      var: service_info.state

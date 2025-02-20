@@ -1,0 +1,31 @@
+---
+#------------------------------------------------------------------------------
+# Description: Playbook is to check for Red Hat Satellite subscription status.
+#        
+#------------------------------------------------------------------------------
+#**************************************************************
+
+# Script Name: check_subscription_status.yml
+
+# Description: Playbook is to check for Red Hat Satellite subscription status
+
+# Author: Raghu Sundaram
+# Organization: Harman
+
+
+  ##########################################################
+  # This will compare previous kernel with updated kernel  
+  ##########################################################
+- name: Check for Redhat Subscription status
+  hosts: all
+  become_user: root
+  become: true
+  gather_facts: false
+  tasks:
+  - name: Use subscription manager to check subscription status.
+    shell: subscription-manager status
+    ignore_errors: true
+    register: subscription_status
+  - name: Display the gathered information
+    debug:
+     var: subscription_status.stdout_lines 
